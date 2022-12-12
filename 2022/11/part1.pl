@@ -24,22 +24,26 @@ Monkey::setCollection(\@Monkey);
 
 say scalar(@Monkey), " monkeys";
 
-for my $round ( 1 .. 20 )
+for my $round ( 1 ..  10000 )
 {
-
     for my $monkey ( @Monkey )
     {
-        say "MONKEY ", $monkey->id;
-        for my $m ( @Monkey ) { say "  ROUND $round BEFORE: ", $m->showList; }
+        # 3say "MONKEY ", $monkey->id;
+        # for my $m ( @Monkey ) { say "  ROUND $round BEFORE: ", $m->showList; }
         $monkey->takeTurn();
-        for my $m ( @Monkey ) { say "  ROUND $round AFTER:  ", $m->showList; }
+        # for my $m ( @Monkey ) { say "  ROUND $round AFTER:  ", $m->showList; }
+    }
+
+    if ( $round % 1000 == 0 )
+    {
+        say "ROUND $round";
+        for my $m (@Monkey )
+        {
+            say "Monkey ".$m->id." inspected items ".$m->inspectCount." times";
+        }
     }
 }
 
-for my $m (@Monkey )
-{
-    say "Monkey ".$m->id." inspected items ".$m->inspectCount." times";
-}
 
 my @sorted = sort { $b <=> $a } map { $_->inspectCount } @Monkey;
 

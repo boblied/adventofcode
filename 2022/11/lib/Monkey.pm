@@ -25,6 +25,10 @@ has inspectCount => ( is => 'rw', default => 0 );
 
 my $MonkeyCollection;
 
+# Use module arithmetic to avoid overflowing worry numbers.
+# Need the least common multiple of all the divisors in the test.
+my $LCM;
+
 sub show($self)
 {
     say "Monkey $self->{id}:";
@@ -64,7 +68,12 @@ sub _parseOperation($operation)
 
 sub setCollection($monkeyArray)
 {
-    $MonkeyCollection = $monkeyArray
+    $MonkeyCollection = $monkeyArray;
+
+    # Find LCM of all the divisors in the tests
+    # Taking shortcut that they're known to be primes
+    use List::Util qw/product/;
+    $LCM = product map { $_->test } @$MonkeyCollection;
 }
 
 sub parse($def)
@@ -108,21 +117,21 @@ sub takeTurn($self)
     {
         $self->inspectCount( $self->inspectCount + 1 );
 
-        say "Monkey $self->{id} inspects $worry";
+        # say "Monkey $self->{id} inspects $worry";
 
-        $worry = $self->opref->($worry);
-        say "  Worry $self->{op} becomes $worry";
-        $worry = int($worry/3);
-        say "  Bored down to $worry";
+        $worry = ( $self->opref->($worry) % $LCM );
+        # say "  Worry $self->{op} becomes $worry";
+        # $worry = int($worry/3);
+        # say "  Bored down to $worry";
 
         if ( $worry % $self->test == 0 )
         {
-            say "  $worry thrown to $self->{ifT}";
+            # say "  $worry thrown to $self->{ifT}";
             $MonkeyCollection->[$self->ifT]->catches($worry);
         }
         else
         {
-            say "  $worry thrown to $self->{ifF}";
+            # say "  $worry thrown to $self->{ifF}";
             $MonkeyCollection->[$self->ifF]->catches($worry);
         }
     }
