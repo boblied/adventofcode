@@ -17,40 +17,6 @@ sub show($m, $hdr=1)
     printf("%3d ", $_) for $m->@*; print "\n";
 }
 
-sub mix($in, $out)
-{
-    my $len = scalar(@$in);
-
-    show($in);
-
-    my $i = 0;
-    my $posInOut = 0;
-    while ( $i < $len )
-    {
-        my $rotate = $in->[$i];
-        my $newPos = ($i + $rotate + ( $rotate < 0 ? -1 : 0 )) % $len;
-
-        say "rot $rotate at i=$i (out=$posInOut) new=$newPos";
-
-        # Insert at new pos
-        splice(@$out, $newPos, 0, $rotate);
-        print "INSERT: "; show $out, 0;
-
-
-        # Delete at old position. If we inserted before i, i moved up
-        splice(@$out, ( $newPos < $posInOut ? $posInOut+1 : $posInOut), 1);
-        print "DELETE: "; show($out, 0);
-
-        if ( $newPos < $i )
-        {
-            ++$i;
-            --$posInOut;
-        }
-        $i++;
-        $posInOut++;
-    }
-}
-
 my @MessageInput;
 my @Message;
 for ( @ARGV )
@@ -58,8 +24,38 @@ for ( @ARGV )
     @MessageInput = map { $_+0 } read_lines($_);
 }
 @Message = @MessageInput;
+my $MsgLen = scalar(@MessageInput);
 
-mix(\@MessageInput, \@Message);
+# Example:
+# Initial condition
+#              index  0   1   2   3   4   5   6
+# MessageInput value  1   2  -3   3  -2   0   4
+#      Message        1   2  -3   3  -2   0   4
+#
+#         i2m         0   1   2   3   4   5   6
+#         m2i         0   1   2   3   4   5   6
+
+# Location of the i'th number in the message output.
+# Given index i, maps MessageInput[i] to a location in Message
+# i2m says "I have the i'th number. Give me the index of
+# the ith number in Message"
+my @i2m = ( 0 .. $#MessageInput );
+
+# Inverse of i2m.  Map a value in Message back to where it
+# started in Message Input.
+# m2i says "I have the m'th position in Message.  Give me
+# the index in MessageInput where it came from"
+my @m2i = ( 0 .. $#Message );
+
+# The rotation is as if the number were picked out of the row
+# and then counts off.  This effectively makes it module (length-1)
+# instead of modulo(length).
+#
+# That also makes a difference in whether it moves positive or
+# negative.  A positive move wraps around back into position 0,
+# but a negative move wraps around into positiion length-1.
+
+mix();
 
 if ( @Message > 10 )
 {
@@ -70,4 +66,74 @@ else
 {
     say "IN:  @MessageInput";
     say "OUT: @Message";
+}
+
+sub mix()
+{
+    for ( my $i = 0; $i < 10 ; $i++ )
+    {
+        mixOne($i % $MsgLen );
+    }
+}
+
+sub mixOne($i)
+{
+    my $val = $MessageInput[$i];
+    my $beg = $i2m[$i];
+
+    my $end;
+    if ( $val > 0 )
+    {
+        $end  = ($beg + $val) % ($MsgLen-1);
+    }
+    elsif ( $val < 0 )
+    {
+        $end = ($beg + $val%($MsgLen-1)) % $MsgLen;
+    }
+    else
+    {
+        say "i=$i val=$val (no-op)";
+        return;
+    }
+    if ( $beg < $end )
+    {
+        rLeftIn( \@m2i, $beg, $end);
+    }
+    else
+    {
+        ($beg, $end) = ($end, $beg);
+        rRightIn( \@m2i, $beg, $end);
+    }
+
+    say "i=$i val=$val beg=$beg end=$end";
+
+    # Record where the i'th number moved to
+    for my $j ( $beg .. $end )
+    {
+        $i2m[ $m2i[$j] ] = $j;
+        # Don't really need to keep the output message,
+        # but useful for  debugging.
+        $Message[$j] = $MessageInput[ $m2i[$j] ];
+    }
+
+     show(\@Message);
+}
+
+sub rLeftIn($arr, $beg, $end)
+{
+    my $rot = $arr->[$beg];
+    for ( my $j = $beg ; $j < $end ; $j++ )
+    {
+        $arr->[$j] = $arr->[$j+1];
+    }
+    $arr->[$end] = $rot;
+}
+sub rRightIn($arr, $beg, $end, $n=1)
+{
+    my $rot = $arr->[$end];
+    for ( my $j = $end ; $j > $beg ; $j-- )
+    {
+        $arr->[$j] = $arr->[$j-1];
+    }
+    $arr->[$beg] = $rot;
 }
