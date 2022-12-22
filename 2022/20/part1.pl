@@ -13,6 +13,7 @@ use File::Slurper qw/read_lines/;
 sub show($m, $hdr=1)
 {
     my $len = scalar(@$m);
+    return if $len > 40;
     if ( $hdr ) { printf("%3d ", $_) for ( 0 .. $len-1 ); print "\n" };
     printf("%3d ", $_) for $m->@*; print "\n";
 }
@@ -57,6 +58,24 @@ my @m2i = ( 0 .. $#Message );
 
 mix();
 
+# Find the location of the first 0
+
+my $indexOfZero;
+for ( $indexOfZero = 0 ; $indexOfZero < $MsgLen; ++$indexOfZero )
+{
+    if ( $MessageInput[ $m2i[$indexOfZero] ] == 0 )
+    {
+        last;
+    }
+}
+my $num1 = $MessageInput[ $m2i[ ($indexOfZero + 1000) % $MsgLen ] ];
+my $num2 = $MessageInput[ $m2i[ ($indexOfZero + 2000) % $MsgLen ] ];
+my $num3 = $MessageInput[ $m2i[ ($indexOfZero + 3000) % $MsgLen ] ];
+
+say "Zero is at $indexOfZero, numbers are $num1, $num2, $num3";
+say "Grove coordinate is: ", $num1 + $num2 + $num3;
+
+
 if ( @Message > 10 )
 {
     say "HEAD:  @MessageInput[0..9]";
@@ -70,7 +89,7 @@ else
 
 sub mix()
 {
-    for ( my $i = 0; $i < 10 ; $i++ )
+    for ( my $i = 0; $i < $MsgLen ; $i++ )
     {
         mixOne($i % $MsgLen );
     }
@@ -95,6 +114,8 @@ sub mixOne($i)
         say "i=$i val=$val (no-op)";
         return;
     }
+
+    # Rotate the range of digits in the output message.
     if ( $beg < $end )
     {
         rLeftIn( \@m2i, $beg, $end);
