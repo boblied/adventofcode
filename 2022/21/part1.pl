@@ -11,29 +11,33 @@
 use v5.36;
 use lib ".";
 
-use Parse;
+use Node;
+use SymbolTable;
+
+my $symtbl = SymbolTable->instance;
 
 readInput();
-
-my %SymbolTable;
-my %Parser;
-
 
 sub readInput()
 {
     while (<>)
     {
         chomp;
-        my ($var, $left, $op, $right) = m/(\w+): (\w+) ([-\+\*\/]) (\w+)/;
+        s/://g;
+        my @rule = split ' ';
 
-        if ( not defined $op )
+        if ( @rule == 2 )
         {
-            my $(name, $value) = m/(\w+): (\d+)/;
-            $SymbolTable{$var} = $left;
+            my ($name, $value) = @rule;
+            $symtbl->insert($name, Variable->new(id => $name, value => $value) );
         }
         else
         {
-            $Parser{$var} = Parse->new(name => $var, left => $left, op => $op, right => $right);
+            my ($name, $left, $op, $right) = @rule;
+            $symtbl->insert($name, Expression->new(id => $name,
+                                left => $left, op => $op, right => $right) );
         }
     }
 }
+
+say $symtbl->lookup("root")->eval();
