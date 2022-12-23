@@ -41,6 +41,25 @@ has op     => ( is => 'ro', required => 1 );
 has left   => ( is => 'rw', required => 1 );
 has right  => ( is => 'ro', required => 1 );
 
+sub getOperands($self)
+{
+    my $sym = SymbolTable->instance();
+    my $left  = $sym->lookup($self->left);
+    my $right = $sym->lookup($self->right);
+
+    return ($left, $right);
+}
+
+sub sayEquation($self)
+{
+    my ($left, $right) = $self->getOperands();
+    my $lval = $left->value // "undef";
+    my $rval = $right->value // "undef";
+    my $val  = $self->value // "undef";
+
+    $self->id. "($val)=". $self->left."($lval)". $self->op. $self->right. "($rval)";
+}
+
 sub eval($self)
 {
     if    ( $self->hasValue )     { return $self->value; }

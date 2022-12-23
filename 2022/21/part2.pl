@@ -11,10 +11,12 @@
 use v5.36;
 use lib ".";
 
-use Node;
+use Node2;
 use SymbolTable;
 
 my $symtbl = SymbolTable->instance;
+
+my $Unknown = 'humn';
 
 readInput();
 
@@ -29,6 +31,9 @@ sub readInput()
         if ( @rule == 2 )
         {
             my ($name, $value) = @rule;
+
+            if ( $name eq $Unknown ) { $value = undef; }  # Part 2
+
             $symtbl->insert($name, Variable->new(id => $name, value => $value) );
         }
         else
@@ -41,7 +46,41 @@ sub readInput()
 }
 
 my $root = $symtbl->lookup("root");
-say $root->eval();
+my $left = $symtbl->lookup( $root->left );
+my $right = $symtbl->lookup( $root->right );
 
-say $root->sayEquation();
+my $lval = $left->eval();
+my $rval = $right->eval();
 
+my $target = $lval // $rval;
+say "TARGET=$target";
+
+if ( defined $lval )
+{
+    $right->clear();
+    $right->solve($target)
+}
+else
+{
+    $left->clear();
+    $left->solve($target)
+}
+
+say $symtbl->lookup($Unknown)->id, " ", $symtbl->lookup($Unknown)->value;
+
+sub between($beg, $end)
+{
+    my $interval = ($end - $beg) / 10;
+    my @val = map { $beg + $interval*$_ } 0..10;
+    return @val;
+}
+
+my $humn = $symtbl->lookup($Unknown);
+for my $guess ( between( 3587647562850 , 3587647562851  ) )
+{
+    $left->clear();
+    $humn->value($guess);
+    $left->eval();
+    say $root->showEquation();
+    say "guess=$guess diff=", $left->value - $right->value;
+}
