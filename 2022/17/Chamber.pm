@@ -168,7 +168,7 @@ sub fall($self)
     my $s = $self->stack;
     my $h = $p->height;
 
-    # pRows is a bitMap of the piece. Mask out other rocks.
+    # pRows is a bitMap of rows containing the piece. Mask out other rocks.
     my @pRows = $self->stack->@[$pBottom..$pTop];
     for ( my $r = $h-1; $r >= 0 ; $r-- )
     {
@@ -176,7 +176,7 @@ sub fall($self)
         $pRows[$r] = $pRows[$r] & $mask & $prock;
     }
 
-    # into is a bitmap of chamber rocks.  Mask out the piece.
+    # into is a bitmap of rows of chamber rocks.  Mask out the piece.
     my @into  = $self->stack->@[ ($pBottom-1) .. ($pTop-1) ];
     for ( my $r = 1 ; $r < $h ; $r++ )
     {

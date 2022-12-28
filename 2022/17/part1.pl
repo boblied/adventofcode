@@ -27,26 +27,28 @@ say "Number of jets: ", scalar @Jet;
 
 my $c = Chamber->new();
 
-while ( $PieceCount++ < 12 )
+my $FallCount = 0;
+my $JetCount = 0;
+while ( $PieceCount++ < 2022 )
 {
     my $p = Piece::next();
 
-    say "Drop #$PieceCount: $p->{id}";
+    say "Drop #$PieceCount: $p->{id} Jet=$JetCount Fall=$FallCount";
     $c->dropPiece($p);
     $c->show();
     my $canFall = 1;
     while ( $canFall )
     {
-        if ( @Jet )
-        {
-            my $j = shift @Jet;
-            say "Jet: $j";
-            $c->doJet($j);
-        }
+        my $j = shift @Jet;
+        push @Jet, $j; # List repeats forever
+        $JetCount++;
+        say "Jet $JetCount: $j";
+        $c->doJet($j);
+
         $canFall = $c->fall();
+        $FallCount++;
         say "Fall: ", $canFall;
     }
-    $c->show;
 }
 
-say $c->getTop();
+say $c->getTop() - 1;
