@@ -51,4 +51,4 @@ while ( $PieceCount++ < 2022 )
     }
 }
 
-say $c->getTop() - 1;
+say $c->getHeight();

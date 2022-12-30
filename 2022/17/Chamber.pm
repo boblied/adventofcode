@@ -43,11 +43,35 @@ sub _trim($self)
     pop $self->stack->@* while $self->stack->[-1] == 0;
 }
 
-sub getTop($self)
+sub getHeight($self)
 {
     # Remove any blank rows from the end of the 
     $self->_trim();
-    return scalar($self->stack->@*);
+    # Don't include the base row
+    return scalar($self->stack->@*) - 1;
+}
+
+sub getTopRow($self)
+{
+    $self->_trim();
+    return $self->stack->[-1];
+}
+
+# Shift the set of top rows into a long integer.  The
+# state of the stack is the set of open positions down
+# to the first row where all columns are blocked, but
+# the top few rows are a good-enough approximation.
+sub getState($self)
+{
+    my ($row, $shift) = (-1, 0);
+    my $state;
+    my $limit = scalar($self->stack->@*);
+    $limit = ( $limit < 6 ? -$limit : -5 );
+    for ($row = -1, $shift = 0; $row >= $limit; $row--, $shift += 8 )
+    {
+        $state |= ($self->stack->[$row] << $shift);
+    }
+    return $state;
 }
 
 sub _stringify($self, $bitmap)
