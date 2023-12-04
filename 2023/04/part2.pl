@@ -9,20 +9,43 @@
 #=============================================================================
 
 use v5.38;
-use builtin qw/true false/; no warnings "experimental::builtin";
+
+use List::Util qw/sum/;
 
 use Getopt::Long;
 my $Verbose = 0;
-my $DoTest  = 0;
+GetOptions("verbose" => \$Verbose);
 
-GetOptions("test" => \$DoTest, "verbose" => \$Verbose);
-exit(!runTest()) if $DoTest;
-
-sub runTest
+# Find numbers that occur more than once
+sub countMatch($n)
 {
-    use Test2::V0;
-
-    is(0, 1, "FAIL");
-
-    done_testing;
+    my %seen;
+    $seen{$_}++ for $n->@*;
+    return scalar grep { $seen{$_} > 1 } keys %seen;
 }
+
+# Make one pass to save number of matches on each card
+my @Match;
+while (<>)
+{
+    my @n = m/(\d+)/g; # Extract all the numbers
+    my $id = shift @n; # Remove the id number
+
+    $Match[$id] = countMatch(\@n);
+}
+
+my @Count = (0) x @Match;   # Array same size as Match
+sub countCard($id, $indent) # Recursive
+{
+    $Count[$id]++;
+    say "${indent}[$id] -> $Match[$id], $Count[$id]" if $Verbose;
+    return if $Match[$id] == 0;
+
+    for my $next ( $id+1 .. $id + $Match[$id] )
+    {
+        countCard($next, "  $indent") if exists $Match[$next];
+    }
+}
+
+countCard($_, "") for 1 .. $#Match;
+say sum @Count;

@@ -11,18 +11,33 @@
 use v5.38;
 use builtin qw/true false/; no warnings "experimental::builtin";
 
+use List::Util qw/uniqint/;
+
 use Getopt::Long;
 my $Verbose = 0;
-my $DoTest  = 0;
 
-GetOptions("test" => \$DoTest, "verbose" => \$Verbose);
-exit(!runTest()) if $DoTest;
+GetOptions("verbose" => \$Verbose);
 
-sub runTest
+sub check($win, $pick)
 {
-    use Test2::V0;
-
-    is(0, 1, "FAIL");
-
-    done_testing;
+    my %seen;
+    $seen{$_}++ for $win->@*, $pick->@*;
+    return scalar( grep { $seen{$_} > 1 } keys %seen );
 }
+
+my $score = 0;
+while (<>)
+{
+    chomp;
+    my @part = split /[:|]/;
+
+    my @win  = split(" ", $part[1]);
+    my @pick = split(" ", $part[2]);
+
+    my $win = check(\@win, \@pick);
+    next if $win == 0;
+
+    $score += 2 ** ($win-1);
+    say "$part[0] win=$win score=$score " if $Verbose;
+}
+say $score;
