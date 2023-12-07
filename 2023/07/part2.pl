@@ -26,7 +26,8 @@ sub runTest
     # done_testing;
 }
 
-my %CardVal = ( A => 14, K => 13, Q => 12, J => 2, T => 10 );
+# Note: J is weakest, must be < 2
+my %CardVal = ( A => 14, K => 13, Q => 12, J => 1, T => 10 );
 $CardVal{$_} = $_ for 2 .. 9;
 
 use constant {
@@ -62,7 +63,7 @@ sub hand2type($strHand)
     if    ( $f[0] == 5 ) { $type = T_5K }
     elsif ( $f[0] == 4 ) { $type = T_4K }
     elsif ( $f[0] == 3 ) { $type = ( $f[1] == 2 ? T_FH : T_3K ) }
-    elsif ( $f[0] == 2 ) { $type = ( $f[1] == 2 ? T_2P   : T_1P ) }
+    elsif ( $f[0] == 2 ) { $type = ( $f[1] == 2 ? T_2P : T_1P ) }
     else                 { $type = T_HC }
 
     my $withJoker = $JokerUpgrade{$type}[$jCount];
@@ -76,7 +77,7 @@ sub makeHand($strHand, $bid)
 {
     my @valHand = map { $CardVal{$_} } split "", $strHand;
     my $type = hand2type($strHand);
-    say "[ $type, @valHand, $bid ]" if $Verbose;
+    # say "[ $type, @valHand, $bid ]" if $Verbose;
     return [ $type, @valHand, $bid ];
 }
 
@@ -95,7 +96,7 @@ my @Ranked = sort {
        || $a->[4] <=> $b->[4]
        || $a->[5] <=> $b->[5] } @Hand;
 
-   # say "Ranked ", Dumper(\@Ranked);
+printf( ("%5d" x 7)."\n", $Ranked[$_]->@*) for 0 .. $#Ranked;
 
 use List::Util qw/sum/;
 say sum map { ($_+1) * $Ranked[$_][6] } 0 .. $#Ranked;
