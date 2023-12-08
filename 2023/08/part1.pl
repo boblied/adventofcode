@@ -9,8 +9,38 @@
 #=============================================================================
 
 use v5.38;
-use builtin qw/true false/; no warnings "experimental::builtin";
+use builtin qw/trim true false/; no warnings "experimental::builtin";
 
 use Getopt::Long;
 my $Verbose = 0;
 GetOptions("verbose" => \$Verbose);
+
+my @Step;
+{ @Step = split "", trim(my $s = <>); }    # First line, directions
+my %Graph;
+
+while (<>)
+{
+    chomp;
+    next if $_ eq "";
+    my ($node, $left, $right) = m/([A-Z]+)/g;
+    $Graph{$node} = { L => $left, R => $right };
+}
+
+my $node = 'AAA';
+my $end  = 'ZZZ';
+
+my $step = 0;
+my $count = 0;
+while ( $node ne $end )
+{
+    my $dir = $Step[$step++];
+    $step = 0 if $step == scalar(@Step);
+
+    print "At $node -> $dir " if $Verbose;
+    $node = $Graph{$node}{$dir};
+
+    $count++;
+    say "$node, count=$count if $Verbose";
+}
+say $count;
