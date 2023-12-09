@@ -11,7 +11,7 @@ use v5.38;
 
 use Exporter;
 our @ISA = qw/Exporter/;
-our @EXPORT = qw/$logger/;
+our @EXPORT = qw/$logger showGrid/;
 
 our $logger;
 
@@ -34,6 +34,24 @@ sub setup()
 
     GetOptions("test" => \$DoTest, "debug:s" => \$DoDebug);
     $logger->level($DBLEVEL{$DoDebug}) if $DoDebug;
+}
+
+sub showGrid($grid)
+{
+    #my $grid = $_[0];
+    my $height = $grid->$#*;
+    my $width  = $grid->[0]->$#*;
+    my $colFormat = " %3s" x ($width+1);
+    my $s = "\n";
+
+    $s .= sprintf("       $colFormat\n", 0 .. $width);
+    $s .=         "     + " . (" ---" x ($width+1)) . "+\n";
+    for my $row ( 0 .. $height )
+    {
+        $s .= sprintf(" %3s |$colFormat | %-3s\n", $row, $grid->[$row]->@*, $row);
+    }
+    $s .=          "     + " . (" ---" x ($width+1)) . "+\n";
+    $s .= sprintf( "       $colFormat\n", 0 .. $width);
 }
 
 sub doTest()
