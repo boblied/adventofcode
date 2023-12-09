@@ -5,17 +5,13 @@
 #=============================================================================
 # Copyright (c) 2023, Bob Lied
 #=============================================================================
-#=============================================================================
-
-use v5.38;
-use builtin qw/trim true false/; no warnings "experimental::builtin";
 
 package AOC;
+use v5.38;
 
 use Exporter;
 our @ISA = qw/Exporter/;
 our @EXPORT = qw/$logger/;
-
 
 our $logger;
 
@@ -25,11 +21,13 @@ my $DoDebug = 0;
 sub setup()
 {
     use Log::Log4perl qw(:easy);
-
     use Getopt::Long;
 
     $logger = Log::Log4perl->get_logger();
-    Log::Log4perl->easy_init($WARN);
+    Log::Log4perl->easy_init({
+            level => $WARN,
+            layout => "%d{HH:mm:ss.SSS} %p{1} %m%n"
+        });
 
     my %DBLEVEL = ( 1 => $INFO, 2 => $DEBUG, 3 => $TRACE,
         i => $INFO, d => $DEBUG, t => $TRACE, );
