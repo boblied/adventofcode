@@ -15,7 +15,7 @@ our @EXPORT = qw/$logger showGrid $DoTest/;
 
 our $logger;
 
-my $DoTest  = 0;
+our $DoTest  = 0;
 my $DoDebug = 0;
 
 sub setup()
