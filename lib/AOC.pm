@@ -11,7 +11,7 @@ use v5.38;
 
 use Exporter;
 our @ISA = qw/Exporter/;
-our @EXPORT = qw/$logger showGrid/;
+our @EXPORT = qw/$logger showGrid $DoTest/;
 
 our $logger;
 
@@ -57,13 +57,6 @@ sub showGrid($grid)
 sub doTest()
 {
     exit(!runTest()) if $DoTest;
-}
-
-sub runTest
-{
-    use Test2::V0;
-    is(0, 1, "FAIL");
-    done_testing;
 }
 
 1;
