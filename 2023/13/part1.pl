@@ -11,81 +11,98 @@ use builtin qw/true false/; no warnings "experimental::builtin";
 use FindBin qw($Bin); use lib "$FindBin::Bin/../../lib"; use AOC;
 AOC::setup;
 
+use List::Util qw/all/;
+
 $logger->info("START");
 
-my @Patterns;
+exit(!runTest()) if $AOC::DoTest;
+
+my $Hcount = 0;
+my $Vcount = 0;
 
 local $/ = ""; # Paragraph mode
 while (<>)
 {
     chomp;
 
-    my @pattern;
-    for my $row ( split("\n", $_) )
+    my @pattern = split "\n";
+
+    my $horiz = findReflection(\@pattern);
+    $logger->debug("In $., H = $horiz");
+
+    # Only look other direction if necessary.
+    if ( $horiz <= 0 )
     {
-        push @pattern, [ split(//, $row) ];
+        $logger->debug("Transpose $. to find V reflection");
+        my $t = transpose(\@pattern);
+        my $vert = findReflection($t);
+        $logger->debug("In $., V = $vert");
+        $Vcount += $vert;
     }
-    my $height = $#pattern;
-    my $width  = $pattern[0]->$#*;
-
-    # All patterns have odd numbers of rows and columns.
-    if ( ($height % 2) == 1 || ($width % 2) == 1 )
+    else
     {
-        die "pattern $. has even dimension $height x $width";
+        $Hcount += $horiz;
     }
-    $logger->info("Pattern $.: ", $#pattern, ' x ', $pattern[0]->$#*);
-
-    my $left = vertReflect(\@pattern, $height, $width);
-    my $above = horizReflect(\@pattern, $height, $width);
-
-    say "Vertical: $left, Horizontal: $above";
 }
 
-sub vertReflect($pattern, $height, $width)
+say $Vcount + (100*$Hcount);
+
+sub transpose($m)
 {
-    # Find possible axis of reflection by looking diagonally
-    for my $axis ( 1 .. $width-1 )
+    my @t;
+    my $width = length($m->[0]);
+
+    for (my $c = 0 ; $c < $width ; $c++ )
     {
-        my $isReflection = true;
-        my $row = 0;
-        my ($left, $right) = ($axis, $axis+1);
-        while ( $left >= 0 && $right <= $width && $isReflection )
+        push @t, join "", map { substr($_, $c, 1) } $m->@*;
+    }
+    return \@t;
+}
+
+sub findReflection($pattern)
+{
+    my $above = -1; my $below = scalar(@$pattern);
+    my $axis = -1;
+    my $isPerfect = 0; # Reflection must reach edge of pattern
+    for (my $r = 0 ; $r < $pattern->$#* ; $r++)
+    {
+        if ( $pattern->[$r] eq $pattern->[$r+1] )
         {
-            $isReflection = $pattern->[$row][$left] eq $pattern->[$row][$right];
-            $row++;
-            $left--; $right++;
+            $axis = $r;
+            ($above, $below) = extendHrange($pattern, $r);
+            $logger->debug("In $. Found pair at $r from $above to $below");
+            $isPerfect = ( $above == 0 || $below == $pattern->$#* );
+            last if $isPerfect;
         }
-        next unless $isReflection;
-
-        my $range;
-        if ( $left == 0 )          { $range = $axis }
-        elsif ( $right == $width ) { $range = $right - $axis }
-
-        # We have a possible axis, verify that every row reflects around it.
-        $isReflection = true;
-        for ( my $row = 0 ; $row <= $height && $isReflection ; $row++ )
-        {
-            $isReflection = isSymmetric($pattern->[$row], $axis, $range);
-        }
-        return ($axis+1) if $isReflection;
-
     }
-    return 0;
+    return ( $isPerfect ? $axis+1 : -1 );
 }
 
-sub isSymmetric($list, $axis, $range)
+
+sub extendHrange($pattern, $start)
 {
-    use List::Util qw/pairwisea all/;
-    my @left  =         $list->@[$axis-$range+1 .. $axis];
-    my @right = reverse $list->@[$axis+1        .. $axis + $range];
+    my $above = $start - 1;
+    my $below = $start + 2;
 
-    return all { $_ } pairwise { $a eq $b } @left, @right
+    while ( $above >= 0 && $below <= $pattern->$#*
+        && $pattern->[$above] eq $pattern->[$below] )
+    {
+        $above--;
+        $below++;
+    }
+    return ($above+1, $below-1);
 }
-
-sub horizReflect($pattern, $height, $width)
-{
-    return 0;
-}
-
 
 $logger->info("FINISH");
+
+##############################
+sub runTest()
+{
+    use Test2::V0;
+    no warnings "experimental::builtin";
+
+    is( transpose( [ "ab", "de", "gh" ] ),
+                   [ "adg", "beh" ], "transpose");
+
+    done_testing();
+}
