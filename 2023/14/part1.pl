@@ -9,7 +9,10 @@
 use v5.38;
 use builtin qw/true false/; no warnings "experimental::builtin";
 use FindBin qw($Bin); use lib "$FindBin::Bin/../../lib"; use AOC;
-AOC::setup;
+
+use AOC::Grid;
+
+AOC::setup();
 
 $logger->info("START");
 
@@ -29,23 +32,11 @@ sub readInput()
         push @map, $_;
     }
 
-    $Grid = transpose(\@map);
+    $Grid = transposeAofS(\@map);
     $Height = $Grid->$#*;
     $Width  = length($Grid->[0]);
 }
 
-
-sub transpose($m)
-{
-    my @t;
-    my $width = length($m->[0]);
-
-    for (my $c = 0 ; $c < $width ; $c++ )
-    {
-        push @t, join "", map { substr($_, $c, 1) } $m->@*;
-    }
-    return \@t;
-}
 
 sub condense($s)
 {
