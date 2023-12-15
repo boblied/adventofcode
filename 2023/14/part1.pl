@@ -11,7 +11,7 @@ use builtin qw/true false/; no warnings "experimental::builtin";
 use FindBin qw($Bin); use lib "$FindBin::Bin/../../lib"; use AOC;
 
 use List::Util qw/max/;
-use AOC::Grid;
+use AOC::StringArray;
 
 AOC::setup();
 

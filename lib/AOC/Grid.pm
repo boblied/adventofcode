@@ -16,23 +16,6 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(showAofS transposeAofS);
 our @EXPORT_OK = qw();
 
-sub showAofS($aOfs)
-{
-    my $height = $aOfs->$#*;
-    my $width  = length($aOfs->[0]) - 1;
-    my $colFormat = " %2s" x ($width+1);
-    my $s = "\n";
-
-    $s .= sprintf("      $colFormat\n", 0 .. $width);
-    $s .=         "    + " . (" --" x ($width+1)) . "+\n";
-    for my $row ( 0 .. $height )
-    {
-        $s .= sprintf(" %2s |$colFormat | %-2s\n", $row,
-            split("", $aOfs->[$row]), $row);
-    }
-    $s .=          "    + " . (" --" x ($width+1)) . "+\n";
-    $s .= sprintf( "      $colFormat\n", 0 .. $width);
-}
 
 # Transpose a grid that's represented as an array of strings
 sub transposeAofS($m)
