@@ -52,8 +52,6 @@ sub transposeAofS($m)
 
 sub getColAofS($m, $col)
 {
-    my $height = $m->$#*;
-
     return (map { substr($m->[$_], $col, 1) } 0 .. $m->$#*);
 }
 
