@@ -11,7 +11,7 @@ use builtin qw/true false/; no warnings "experimental::builtin";
 use FindBin qw($Bin); use lib "$FindBin::Bin/../../lib"; use AOC;
 
 use List::Util qw/max/;
-use AOC::Grid;
+use AOC::StringArray;
 
 AOC::setup();
 
@@ -23,49 +23,87 @@ my $Grid;
 my $Height;
 my $Width;
 
+my $CycleCount = 0;
+
 $Grid = readInput();
-$logger->info("Grid: $Height x $Width", showAofS($Grid));
+# $logger->info("Grid: $Height x $Width ", showAofS($Grid));
 
-$Grid = spinCycle($Grid);
-say loadVal($Grid);
 
-sub rotate($grid)
+my $period;
+my %cache;
+for my $cycle ( 0 .. 1200 )
 {
-    $grid = transposeAofS($grid);
-    $Height = $grid->$#*;
-    $Width = length($grid->[0]) -1;
+    $CycleCount++;
+    $Grid = spinCycle($Grid);
+    my $load = loadVal($Grid);
+    if ( exists $cache{$load} &&
+         $cache{$load}[1] eq join("/", $Grid->@*) )
+    {
+        $logger->info("At cycle $CycleCount, found load $load in cache at $cache{$load}[0]");
+        say "Period=", $period = $CycleCount - $cache{$load}[0];
+        last;
+    }
+    else
+    {
+        $cache{$load} = [ $CycleCount, join("/", $Grid->@*) ];
+    }
 }
 
-my $CycleCount = 0;
+my $Limit = 1_000_000_000;
+
+my $skip = int( ($Limit - $CycleCount) / $period);
+my $remain = $Limit - $CycleCount - ($skip * $period);
+say "period=$period transient=$CycleCount skip=", $skip*$period, "($skip) remain=$remain";
+
+$Grid = spinCycle($Grid) for ( 1 .. $remain );
+say "Final load: ", loadVal($Grid);
+
+exit(0);
+
+
+
+sub rollTableNorth($grid)
+{
+    rollNorth($grid, $_) for ( 0 .. $Width )
+}
+sub rollTableSouth($grid)
+{
+    rollSouth($grid, $_) for ( 0 .. $Width )
+}
+sub rollTableWest($grid)
+{
+    rollWest($grid, $_) for ( 0 .. $Height )
+}
+sub rollTableEast($grid)
+{
+    rollEast($grid, $_) for ( 0 .. $Height )
+}
+
 sub spinCycle($grid)
 {
-    # North
-    $grid = rotate($grid);
-    $grid->[$_] = roll($grid->[$_]) for 0 .. $Height;
-    # West
-    $grid = rotate($grid);
-    $grid->[$_] = roll($grid->[$_]) for 0 .. $Height;
-    # South
-    $grid = rotate($grid);
-    $grid->[$_] = roll($grid->[$_]) for 0 .. $Height;
-    # East
-    $grid = rotate($grid);
-    $grid->[$_] = roll($grid->[$_]) for 0 .. $Height;
+    rollTableNorth($grid);
+$logger->debug("SPIN after N", showAofS($grid));
+    rollTableWest($grid);
+$logger->debug("SPIN after W", showAofS($grid));
+    rollTableSouth($grid);
+$logger->debug("SPIN after S", showAofS($grid));
+    rollTableEast($grid);
+$logger->debug("SPIN after E", showAofS($grid));
 
-    $CycleCount++;
     return $grid;
 }
 
 sub loadVal($grid)
 {
-    # Count boulders in each column
+    # Count boulders in each row
     my $answer = 0;
-    for my $col ( 0 .. $Width )
+    for my $row ( 0 .. $Height )
     {
-        my $n = grep /O/, map { substr($grid->[$_], $col, 1) } 0 .. $Height;
-        my $val = $n * ($Width - $col + 1);
+        my $n = $grid->[$row] =~ tr/O//;
+
+        my $val = $n * ($Height - $row + 1);
         $answer += $val;
-        $logger->info("Column $col: n=$n val=$val");
+        $logger->debug("Row $row n=$n val=$val");
     }
     return $answer;
 }
@@ -84,7 +122,7 @@ sub readInput()
     return \@map;
 }
 
-sub roll($s)
+sub rollLine($s)
 {
     use English;
     my $t = $s;
@@ -96,8 +134,42 @@ sub roll($s)
         my $len = $LAST_MATCH_END[1] - $LAST_MATCH_START[1];
         substr($t, $LAST_MATCH_START[1], $len, "$rock$ground");
     }
-    $logger->debug("Roll: [$s] => [$t]");
+    # $logger->debug("rollLine: [$s] => [$t]");
     return $t;
+}
+
+sub rollNorth($grid, $column)
+{
+    my $cstr = join("", getColAofS($grid, $column));
+    my @rolled = split(//, rollLine($cstr));
+    for my $row ( 0 .. $grid->$#* )
+    {
+        substr($grid->[$row], $column, 1) = $rolled[$row];
+    }
+    return $grid;
+}
+
+sub rollSouth($grid, $column)
+{
+    my $cstr = join("", getColAofS($grid, $column));
+    my @rolled = reverse split(//, rollLine(scalar(reverse $cstr)));
+    for my $row ( 0 .. $grid->$#* )
+    {
+        substr($grid->[$row], $column, 1) = $rolled[$row];
+    }
+    return $grid;
+}
+
+sub rollWest($grid, $row)
+{
+    $grid->[$row] = rollLine($grid->[$row]);
+    return $grid;
+}
+
+sub rollEast($grid, $row)
+{
+    $grid->[$row] = reverse rollLine(scalar(reverse $grid->[$row]));
+    return $grid;
 }
 
 $logger->info("FINISH");
@@ -105,7 +177,20 @@ $logger->info("FINISH");
 sub runTest()
 {
     use Test2::V0;
-    is (roll("OO.O.O..##"), "OOOO....##", "roll");
-    is (roll("...OO....O"), "OOO.......", "roll");
+    is (rollLine("OO.O.O..##"), "OOOO....##", "roll");
+    is (rollLine("...OO....O"), "OOO.......", "roll");
+
+    my @g = ( "O.O.O.",".O.O.O" );
+    is( rollNorth(\@g, 1), ["OOO.O.","...O.O"], "rollNorth");
+
+    @g = ( "O.O.O.",".O.O.O" );
+    is( rollSouth(\@g, 2), ["O...O.",".OOO.O"], "rollSouth");
+
+    @g = ( "O.O.O.",".O.O.O" );
+    is( rollWest(\@g, 0), ["OOO...",".O.O.O"], "rollWest");
+
+    @g = ( "O.O.O.",".O.O.O" );
+    is( rollEast(\@g, 0), ["...OOO",".O.O.O"], "rollEast");
+
     done_testing();
 }
