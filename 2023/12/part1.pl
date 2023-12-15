@@ -23,78 +23,101 @@ while (<>)
     chomp;
     my ($rep, @groups) = split /[ ,]/;
 
-    my @report = split //, $rep;
-    $logger->info("[@report], (@groups)");
+    $logger->info("[$rep], (@groups)");
 
-    waysToFit(\@report, @groups);
+    $ComboCount += waysToFit($rep, @groups);
 }
+say $ComboCount;
 
-sub canFit($report, $seq, $where)
+sub waysToFit($rep, @groups)
 {
-    my ($lower, $upper) = ($where, $where + $seq -1);
-    return [] if $upper > $report->$#*;
-
-    # All the covered positions must not be dots
-    # Can't be adjacent to a known
-    if (    ($lower == 0            || $report->[$lower-1] ne '#' )
-         && ($upper == $report->$#* || $report->[$upper+1] ne '#' )
-         && all { $_ ne "." } $report->@[$lower .. $upper]
-     )
+    if ( ! @groups )
     {
-        return [$lower, $upper];
-    }
-    return [];
-}
-
-sub findSeqPossibility($report, $seq, $begin = 0)
-{
-
-    my @place;
-    for (my $where = $begin; $where <= $report->$#*; $where++ )
-    {
-        my $range = canFit($report, $seq, $where);
-        push @place, $range if scalar(@$range);
-    }
-    return \@place;
-}
-
-sub waysToFit($report, @group)
-{
-    for my $place ( findSeqPossibility($report, $group[0])->@* )
-    {
-        $logger->info("Top level: $group[0] at $place->@*");
-        count($report, \@group, 1, $place->[1]+2, "++");
-    }
-    say "ComboCount=$ComboCount";
-}
-
-sub count($report, $groups, $level, $bound, $indent)
-{
-    $logger->debug("${indent}count(report,groups,$level,$bound)");
-    if ( $level > $groups->$#* )
-    {
-        $logger->debug("${indent}___ Base case for $level, count=$ComboCount");
-        return 1;
+        # Out of groups is okay if we don't have a # to satisfy
+        $logger->debug("Out of groups, rep=$rep");
+        return ( index($rep, '#') < 0 ? 1 : 0 );
     }
 
-    $logger->debug("${indent}Look for $groups->[$level] at >= $bound");
-    my $places = findSeqPossibility($report, $groups->[$level], $bound);
-    if ( scalar(@$places) == 0 )
+    if ( length($rep) == 0 )
     {
-        $logger->debug("${indent}Can't place $groups->[$level] past $bound");
+        # Out of space, but still groups left
+        $logger->debug("rep is empty, g=(@groups)");
         return 0;
     }
-    if ( $level == $groups->$#* )
+
+    # If there's not enough space to accomodate the groups, we can stop
+    my $need = @groups - 1 + sum0(@groups);
+    $logger->debug("WTF rep='$rep' g=(@groups), need=$need, len=", length($rep));
+
+    if ( length($rep) < $need )
     {
-        $ComboCount += scalar(@$places);
-        $logger->info("${indent}Placed last group, count=$ComboCount");
-        return;
+        $logger->debug("not enough space in rep '$rep', g=(@groups)");
+        return  0;
     }
 
-    for my $place ( $places->@* )
+    my $nextChar = substr($rep, 0, 1);
+
+    my $out = 0;
+    if ( $nextChar eq "." )
     {
-        $logger->info("${indent}Level $level: found $groups->[$level] at $place->@*");
-        count($report, $groups, $level+1, $place->[1]+2, "++$indent");
+        $out = dot($rep, @groups);
+    }
+    elsif ( $nextChar eq "#" )
+    {
+        # Handle group and possibly recurse
+        $out = pound($rep, @groups);
+    }
+    elsif ( $nextChar eq "?" )
+    {
+        # ? can be either . or #, go both ways
+        $out = dot($rep, @groups) + pound($rep, @groups);
+    }
+    else
+    {
+        die "Unexpected char in [$rep]"
+    }
+    return $out;
+}
+
+sub dot($rep, @groups)
+{
+    # Can't place a group here, move on
+    $logger->debug("DOT at '$rep' g=(@groups)");
+    return waysToFit( substr($rep, 1), @groups);
+}
+
+sub pound($rep, @groups)
+{
+    $logger->debug("POUND at '$rep' g=(@groups)");
+    # Next g characters must be # or ?
+    my $g = shift @groups;
+    if ( substr($rep, 0, $g) =~ /^[?#]+$/ )
+    {
+        # Check for placement of last group at end of report
+        if ( length($rep) == $g )
+        {
+            $logger->debug("Last group at end");
+            return ( @groups == 0 ? 1 : 0 );
+        }
+
+        # Next char after group must be a spacer
+        my $next = substr($rep, $g, 1);
+        if ( $next eq "." || $next eq "?" )
+        {
+            $logger->debug("Space after group OK");
+            # Skip over group and space, repeat
+            return waysToFit( substr($rep, $g+1), @groups);
+        }
+        else
+        {
+            $logger->debug("No space after group 'rep' (@groups)");
+            return 0;
+        }
+    }
+    else
+    {
+        $logger->debug("Can't place group of g at '$rep'");
+        return 0;
     }
 }
 
