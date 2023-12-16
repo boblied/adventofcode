@@ -29,22 +29,20 @@ sub new
     return $self;
 }
 
-sub grid($self) { return $self->{_grid} }
-sub height($self) { return $self->{_height} }
-sub width($self) { return $self->{_width} }
+sub grid($self)   { $self->{_grid} }
+sub height($self) { $self->{_height} }
+sub width($self)  { $self->{_width} }
 
-sub loadFile
+sub get($self, $row, $col) { $self->{_grid}->[$row][$col] }
+
+sub isValidRow($self, $row) { $row >= 0 && $row <= $self->{_height} }
+sub isValidCol($self, $col) { $col >= 0 && $col <= $self->{_width}  }
+sub isInbounds($self, $row, $col)
 {
-    my $g = AOC::Grid->new();
-    while (<>)
-    {
-        chomp;
-        push @{$g->{_grid}}, [ split // ];
-    }
-    $g->{_height} = $g->{_grid}->$#*;
-    $g->{_width}  = $g->{_grid}->[0]->$#*;
-    return $g;
+    $self->isValidRow($row) && $self->isValidCol($col)
 }
+
+sub set($self, $row, $col, $val) { $self->{_grid}[$row][$col] = $val; return $self; }
 
 sub show($self)
 {
@@ -63,6 +61,30 @@ sub show($self)
     $s .=          "   + " . (" --" x ($width+1)) . "+\n";
     $s .= sprintf( "     $colFormat\n", 0 .. $width);
     return $s;
+}
+
+sub loadGrid
+{
+    my $g = AOC::Grid->new();
+    while (<>)
+    {
+        chomp;
+        push @{$g->{_grid}}, [ split // ];
+    }
+    $g->{_height} = $g->{_grid}->$#*;
+    $g->{_width}  = $g->{_grid}->[0]->$#*;
+    return $g;
+}
+
+sub makeGrid($height, $width, $val)
+{
+    my @g;
+    push @g, [ ($val) x ($width+1) ] for 0 .. $height;
+    my $grid = AOC::Grid->new();
+    $grid->{_grid} = \@g;
+    $grid->{_height} = $height;
+    $grid->{_width}  = $width;
+    return $grid;
 }
 
 1;
