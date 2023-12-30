@@ -13,8 +13,8 @@ use v5.38;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(loadGrid neighborNESW);
-our @EXPORT_OK = qw(loadGrid makeGrid);
+our @EXPORT = qw(loadGrid);
+our @EXPORT_OK = qw(makeGrid);
 
 sub new
 {
@@ -44,9 +44,13 @@ sub isInbounds($self, $row, $col)
 
 sub set($self, $row, $col, $val) { $self->{_grid}[$row][$col] = $val; return $self; }
 
-sub neighborNESW($self, @loc)
+sub north($self, $row, $col) { return ( $row > 0 ? [$row-1, $col] : undef ) }
+sub south($self, $row, $col) { return ( $row < $self->height ? [$row+1, $col] : undef ) }
+sub west( $self, $row, $col) { return ( $col > 0 ? [$row, $col-1] : undef ) }
+sub east( $self, $row, $col) { return ( $col < $self->width  ? [$row, $col+1] : undef ) }
+
+sub neighborNESW($self, $r, $c)
 {
-    my ($r,$c) = @loc;
     grep { ( 0 <= $_->[0] <= $self->{_height} ) && 
                    ( 0 <= $_->[1] <= $self->{_width} ) }
         ( [$r-1, $c], [$r, $c+1], [$r+1, $c], [$r, $c-1] );
