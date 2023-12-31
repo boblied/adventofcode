@@ -56,6 +56,11 @@ sub neighborNESW($self, $r, $c)
         ( [$r-1, $c], [$r, $c+1], [$r+1, $c], [$r, $c-1] );
 }
 
+sub aroundNESW($self, $r, $c)
+{
+    map { $self->{_grid}->[$_->[0]][$_->[1]] => $_ } $self->neighborNESW($r, $c);
+}
+
 sub show($self)
 {
     my $grid = $self->{_grid};
