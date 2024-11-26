@@ -3,8 +3,7 @@
 #=============================================================================
 # Copyright (c) 2023, Bob Lied
 #=============================================================================
-#  
-# part1.pl Advent of Code 2023 Day 22 Part 1 Sand Slabs
+# part2.pl Advent of Code 2023 Day 22 Part 2 Chain Reaction
 #=============================================================================
 #=============================================================================
 
@@ -14,7 +13,7 @@ use FindBin qw($Bin); use lib "$FindBin::Bin"; use lib "$FindBin::Bin/../../lib"
 AOC::setup;
 use AOC::Grid qw/makeGrid/;
 
-use List::Util qw/max/;
+use List::Util qw/max sum0/;
 use List::MoreUtils qw/all/;
 use Heap::Binary;
 use Brick;
@@ -33,13 +32,38 @@ $logger->info("MAX: x=$MaxX y=$MaxY z=$MaxZ");
 
 my $Pile = drop($Snapshot);
 
-my $count = disintegrate($Pile);
+buildSupportNetwork($Pile);
 
-say $count - 1; # Counts virtual brick on ground
+my $count = chains($Pile);
+say $count;
 
 $logger->info("FINISH");
 
-sub disintegrate($pile)
+sub chains($pile)
+{
+    my $count = 0;
+
+    ... # TODO account for entire stack dropping at the bottom
+
+    # From the top down, try removing each brick and cache the
+    # count of falls triggered from that.
+    for my $layer ( reverse 1 .. $pile->$#* )
+    {
+        for my $brick ( $pile->[$layer]->@* )
+        {
+            # Find bricks that this brick supports, that only have 1 support
+            my @wouldFall = grep { $_->below() == 1 } $brick->getAbove()->@*;
+            my $chain = scalar(@wouldFall) + sum0 map { $_->chainCount() } @wouldFall;
+            $brick->chain($chain);
+            $logger->debug("CHAIIN: ", $brick->show);
+            $count += $chain;
+        }
+    }
+
+    return $count;
+}
+
+sub buildSupportNetwork($pile)
 {
     my $count = 0;
 
@@ -69,25 +93,6 @@ sub disintegrate($pile)
             }
         }
     }
-
-    # A brick can be removed if there is nothing above it
-    # OR everything it supports has an alternate support
-    for my $layer ( 1 .. $pile->$#* )
-    {
-        for my $brick ( $pile->[$layer]->@* )
-        {
-            if ( $brick->above() == 0 )
-            {
-                $count++;
-            }
-            elsif ( all { $_->below() > 1 } $brick->getAbove()->@*)
-            {
-                $count++;
-            }
-        }
-    }
-
-    return $count;
 }
 
 sub drop($snap)

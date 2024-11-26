@@ -20,6 +20,8 @@ class SupportBrick
     field $_above = 0;  # Count of bricks laying directly on top of us
     field $_below = 0;  # Count of bricks we are supporting
 
+    field $_chain = 0;  # Chain reaction count if brick is removed
+
     method supports($brick) { push @_supports, $brick }
     method supportedBy($brick) { push @_supportedBy, $brick }
 
@@ -31,7 +33,12 @@ class SupportBrick
     method above() { scalar @_supports }
     method below() { scalar @_supportedBy }
 
-    method show() { "^(".$self->above().") v(".$self->below().") ". $_line->show() }
+    method chain($n) { $_chain += $n }
+    method chainCount() { $_chain }
+
+    method show() {  "^(".$self->above().") " . "v(".$self->below().") "
+                   . "C($_chain) " . $_line->show()
+    }
 
     method showX() {
           join(' | ', map { $_->show() } @_supports)
