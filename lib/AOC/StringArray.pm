@@ -16,7 +16,7 @@ use v5.38;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(showAofS transposeAofS getColAofS);
+our @EXPORT = qw(showAofS transposeAofS getColAofS diaglrAofS diagrlAofS);
 our @EXPORT_OK = qw();
 
 sub showAofS($aOfs)
@@ -53,6 +53,65 @@ sub transposeAofS($m)
 sub getColAofS($m, $col)
 {
     return (map { substr($m->[$_], $col, 1) } 0 .. $m->$#*);
+}
+
+# Extract all the diagonals that slope down from left to right
+#    \ \ \ \
+#     \ \ \
+#    \ \ \ \
+sub diaglrAofS($m)
+{
+    my @diag;
+    my $width = length($m->[0]);
+    for my $row ( 0 .. $m->$#* )
+    {
+        my $d = "";
+        for (my $c = 0, my $r = $row; $r >= 0 && $c < $width; $c++, $r-- )
+        {
+            $d .= substr($m->[$r], $c, 1);
+        }
+        push @diag, $d;
+    }
+    for my $col ( 1 .. length($m->[0])-1 )
+    {
+        my $d = "";
+        for ( my $c = $col, my $r = $m->$#*; $r >= 0 && $c < $width; $c++, $r-- )
+        {
+            $d .= substr($m->[$r], $c, 1);
+        }
+        push @diag, $d;
+    }
+    return \@diag;
+}
+
+# Extract all the diagonals that slope down from right to left
+#    / / / /
+#     / / /
+#    / / / /
+sub diagrlAofS($m)
+{
+    my @diag;
+    my $width = length($m->[0]) - 1;
+    my $height = $m->$#*;
+    for my $col ( reverse 0 .. $width )
+    {
+        my $d = "";
+        for (my $c = $col, my $r = 0; $r <= $height && $c <= $width ; $c++, $r++ )
+        {
+            $d .= substr($m->[$r], $c, 1);
+        }
+        push @diag, $d;
+    }
+    for my $row ( 1 .. $height )
+    {
+        my $d = "";
+        for ( my $c = 0, my $r = $row; $r <= $height &&  $c <= $width ; $c++, $r++ )
+        {
+            $d .= substr($m->[$r], $c, 1);
+        }
+        push @diag, $d;
+    }
+    return \@diag;
 }
 
 1;
